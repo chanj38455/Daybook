@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daybook">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Daybook</title>
+<style>
+  :root{
+    --bg:#14161A;
+    --surface:#1D2027;
+    --surface-2:#252932;
+    --border:#2C303A;
+    --text:#EDEDE8;
+    --text-dim:#8E92A0;
+    --text-faint:#5B5F6B;
+    --work:#E3A23E;
+    --work-dim:#4A3A20;
+    --fit:#4FB286;
+    --fit-dim:#1F3C31;
+    --danger:#D9695F;
+    font-size:16px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    overscroll-behavior-y:none;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:"New York", Georgia, "Times New Roman", serif; font-weight:600; margin:0;}
+  #app{
+    max-width:520px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+  header.top{
+    padding: calc(18px + env(safe-area-inset-top)) 20px 14px;
+    position:sticky; top:0; z-index:5;
+    background:linear-gradient(var(--bg) 85%, transparent);
+  }
+  header.top .eyebrow{font-size:13px; color:var(--text-dim); margin-bottom:2px;}
+  header.top h1{font-size:26px; letter-spacing:-0.01em;}
+  main{flex:1; padding:0 20px 24px;}
+  section.tab{display:none;}
+  section.tab.active{display:block; animation:fade .18s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .card-title{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .card-title h2{font-size:17px;}
+  .card-title .meta{font-size:12.5px; color:var(--text-dim); font-family:-apple-system,sans-serif;}
+
+  .row{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .row:last-child{border-bottom:none;}
+  .row.done .row-title{color:var(--text-faint); text-decoration:line-through;}
+
+  .check{
+    width:22px; height:22px; min-width:22px;
+    border-radius:50%;
+    border:1.5px solid var(--text-faint);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    background:transparent;
+  }
+  .check.on{background:var(--fit); border-color:var(--fit);}
+  .check.on::after{content:"✓"; font-size:12px; color:#0B1310; font-weight:700;}
+  .check.work.on{background:var(--work); border-color:var(--work);}
+  .check.work.on::after{color:#2B1D06;}
+
+  .row-body{flex:1; min-width:0;}
+  .row-title{font-size:15px; line-height:1.3;}
+  .row-sub{font-size:12.5px; color:var(--text-dim); margin-top:2px;}
+  .dot{width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:5px;}
+  .dot.work{background:var(--work);}
+  .dot.personal{background:#7B9CE8;}
+  .dot.high{background:var(--danger);}
+  .dot.med{background:var(--work);}
+  .dot.low{background:var(--text-faint);}
+
+  .icon-btn{
+    width:30px; height:30px; border-radius:8px;
+    border:none; background:transparent; color:var(--text-faint);
+    display:flex; align-items:center; justify-content:center;
+    font-size:16px; cursor:pointer;
+  }
+  .icon-btn:active{background:var(--surface-2);}
+
+  .empty{
+    text-align:center; padding:26px 10px; color:var(--text-dim); font-size:14px;
+  }
+  .empty .big{font-size:22px; margin-bottom:6px; display:block;}
+
+  input, select{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:10px;
+    padding:11px 12px;
+    font-size:15px;
+    font-family:inherit;
+    outline:none;
+  }
+  input[type="checkbox"]{width:18px; height:18px;}
+  input::placeholder{color:var(--text-faint);}
+  label.field{display:block; font-size:12.5px; color:var(--text-dim); margin:10px 0 5px;}
+  label.field:first-child{margin-top:0;}
+
+  .btn{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:none;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    margin-top:14px;
+  }
+  .btn.work{background:var(--work); color:#2B1D06;}
+  .btn.fit{background:var(--fit); color:#0B1310;}
+  .btn.ghost{background:var(--surface-2); color:var(--text); border:1px solid var(--border); margin-top:8px;}
+  .btn:disabled{opacity:0.55;}
+
+  .quickadd{display:flex; gap:8px; margin-bottom:14px;}
+  .quickadd input{flex:1;}
+  .quickadd button{
+    width:44px; border-radius:10px; border:none;
+    background:var(--work); color:#2B1D06; font-size:20px; font-weight:600;
+  }
+
+  .segmented{
+    display:flex; background:var(--surface-2); border-radius:10px; padding:3px; margin-bottom:14px;
+  }
+  .segmented button{
+    flex:1; border:none; background:transparent; color:var(--text-dim);
+    padding:8px 0; font-size:13.5px; border-radius:8px; font-weight:500;
+    font-family:inherit; cursor:pointer;
+  }
+  .segmented button.active{background:var(--surface); color:var(--text);}
+
+  .progress-track{
+    height:8px; background:var(--surface-2); border-radius:5px; overflow:hidden; margin:8px 0 4px;
+  }
+  .progress-fill{height:100%; background:var(--fit); border-radius:5px; transition:width .25s ease;}
+
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .stat{background:var(--surface-2); border-radius:10px; padding:12px;}
+  .stat .num{font-size:22px; font-weight:600; font-family:"New York",serif;}
+  .stat .label{font-size:12px; color:var(--text-dim); margin-top:2px;}
+
+  .day-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:6px;}
+  .day-pill{
+    aspect-ratio:1; border-radius:9px; background:var(--surface-2);
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; color:var(--text-dim); border:1px solid var(--border);
+  }
+  .day-pill.hit{background:var(--fit-dim); color:var(--fit); border-color:var(--fit);}
+
+  .week-day{margin-bottom:14px;}
+  .week-day .wd-head{display:flex; align-items:baseline; gap:8px; margin-bottom:8px;}
+  .week-day .wd-head .name{font-size:15px; font-weight:600;}
+  .week-day .wd-head .date{font-size:12.5px; color:var(--text-dim);}
+  .week-day .wd-head .today-badge{
+    font-size:10.5px; background:var(--work-dim); color:var(--work);
+    padding:2px 7px; border-radius:20px; font-weight:600;
+  }
+  .chip{
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:12.5px; background:var(--surface-2); padding:5px 9px; border-radius:8px; margin:0 6px 6px 0;
+  }
+  .chip.fit{background:var(--fit-dim); color:var(--fit);}
+  .chip.plan{background:var(--work-dim); color:var(--work);}
+
+  nav.tabbar{
+    position:fixed; bottom:0; left:0; right:0;
+    background:rgba(29,32,39,0.92);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border-top:1px solid var(--border);
+    display:flex;
+    padding-bottom:env(safe-area-inset-bottom);
+    z-index:10;
+    max-width:520px;
+    margin:0 auto;
+  }
+  nav.tabbar button{
+    flex:1; background:none; border:none; padding:10px 0 8px;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    color:var(--text-faint); font-size:10.5px; font-family:inherit; cursor:pointer;
+  }
+  nav.tabbar button.active{color:var(--work);}
+  nav.tabbar button svg{width:22px; height:22px;}
+
+  .goal-row{margin-bottom:14px;}
+  .goal-row:last-child{margin-bottom:0;}
+  .goal-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px;}
+  .goal-top .t{font-size:14.5px;}
+  .goal-top .v{font-size:12.5px; color:var(--text-dim);}
+  .goal-actions{display:flex; gap:8px; margin-top:6px;}
+  .goal-actions button{
+    flex:1; padding:6px; border-radius:8px; border:1px solid var(--border);
+    background:var(--surface-2); color:var(--text); font-size:13px; font-family:inherit;
+  }
+
+  .fab-form{display:none;}
+  .fab-form.open{display:block;}
+
+  .checkbox-field{display:flex; align-items:center; gap:8px; cursor:pointer; margin:10px 0 5px;}
+  .checkbox-field span{font-size:12.5px; color:var(--text-dim);}
+
+  ::-webkit-scrollbar{display:none;}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <header class="top">
+    <div class="eyebrow" id="header-date"></div>
+    <h1 id="header-title">Today</h1>
+  </header>
+
+  <main>
+
+    <!-- TODAY -->
+    <section class="tab active" id="tab-today">
+
+      <div class="quickadd">
+        <input type="text" id="quick-task-input" placeholder="Add a task for today">
+        <button id="quick-task-add" aria-label="Add">+</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <h2>Today's workout</h2>
+          <span class="meta" id="today-workout-day"></span>
+        </div>
+        <div id="today-workout-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <h2>Due today</h2>
+          <span class="meta" id="today-task-count"></span>
+        </div>
+        <div id="today-task-list"></div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat">
+          <div class="num" id="stat-streak">0</div>
+          <div class="label">day streak</div>
+        </div>
+        <div class="stat">
+          <div class="num" id="stat-open-tasks">0</div>
+          <div class="label">open tasks</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- TASKS -->
+    <section class="tab" id="tab-tasks">
+
+      <div class="card">
+        <div class="card-title"><h2>New task</h2></div>
+        <label class="field">Title</label>
+        <input type="text" id="task-title" placeholder="Follow up with landlord re: Euston flat">
+        <label class="field">Category</label>
+        <select id="task-category">
+          <option value="work">Work</option>
+          <option value="personal">Personal</option>
+        </select>
+        <label class="field">Deadline</label>
+        <input type="date" id="task-due">
+        <label class="field">Time needed (minutes)</label>
+        <input type="number" id="task-duration" placeholder="30">
+        <label class="field">Priority</label>
+        <select id="task-priority">
+          <option value="med" selected>Medium</option>
+          <option value="high">High</option>
+          <option value="low">Low</option>
+        </select>
+        <button class="btn work" id="task-submit">Add task</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <h2>Auto-organize</h2>
+        </div>
+        <div class="row-sub" id="organize-status">Add a deadline and time needed to your tasks, then organize.</div>
+        <button class="btn work" id="organize-btn">Organize tasks</button>
+        <button class="btn ghost" id="organize-settings-toggle">Organize settings</button>
+        <div class="fab-form" id="organize-settings-form">
+          <label class="field">Anthropic API key (optional — enables Claude-powered planning)</label>
+          <input type="password" id="setting-apikey" placeholder="sk-ant-...">
+          <label class="field">Minutes available per day for tasks</label>
+          <input type="number" id="setting-capacity" placeholder="120">
+          <label class="checkbox-field">
+            <input type="checkbox" id="setting-skip-weekends">
+            <span>Skip weekends when planning</span>
+          </label>
+          <button class="btn fit" id="setting-save">Save settings</button>
+          <button class="btn ghost" id="setting-clear-key">Clear API key</button>
+          <div class="row-sub" style="margin-top:8px;">Your key is stored only in this browser, on this device. Get one at console.anthropic.com — using it will use your own API credit. With no key, or no internet, tasks are organized with built-in logic instead.</div>
+        </div>
+      </div>
+
+      <div class="segmented" id="task-filter">
+        <button data-f="all" class="active">All</button>
+        <button data-f="work">Work</button>
+        <button data-f="personal">Personal</button>
+        <button data-f="done">Done</button>
+      </div>
+
+      <div class="card">
+        <div id="task-list"></div>
+      </div>
+
+    </section>
+
+    <!-- FITNESS -->
+    <section class="tab" id="tab-fitness">
+
+      <div class="card">
+        <div class="card-title">
+          <h2>Goals</h2>
+        </div>
+        <div id="goal-list"></div>
+        <button class="btn ghost" id="goal-toggle">Add a goal</button>
+        <div class="fab-form" id="goal-form">
+          <label class="field">Goal</label>
+          <input type="text" id="goal-title" placeholder="Squat 100kg">
+          <label class="field">Target</label>
+          <input type="number" id="goal-target" placeholder="100">
+          <label class="field">Unit</label>
+          <input type="text" id="goal-unit" placeholder="kg">
+          <button class="btn fit" id="goal-submit">Save goal</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><h2>Weekly schedule</h2></div>
+        <div id="schedule-list"></div>
+        <button class="btn ghost" id="sched-toggle">Add a session</button>
+        <div class="fab-form" id="sched-form">
+          <label class="field">Day</label>
+          <select id="sched-day">
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+            <option value="0">Sunday</option>
+          </select>
+          <label class="field">Session</label>
+          <input type="text" id="sched-name" placeholder="Legs, or ski conditioning">
+          <button class="btn fit" id="sched-submit">Save session</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <h2>Last 7 days</h2>
+          <span class="meta" id="fit-streak-meta"></span>
+        </div>
+        <div class="day-grid" id="fit-history"></div>
+      </div>
+
+    </section>
+
+    <!-- WEEK -->
+    <section class="tab" id="tab-week">
+      <div id="week-list"></div>
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button data-tab="today" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9h13v-9"/></svg>
+      Today
+    </button>
+    <button data-tab="tasks">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 2.5 2.5L16 9"/></svg>
+      Tasks
+    </button>
+    <button data-tab="fitness">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12h3M19 12h3M6 8v8M18 8v8M6 12h12"/></svg>
+      Fitness
+    </button>
+    <button data-tab="week">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>
+      Week
+    </button>
+  </nav>
+
+</div>
+
+<script>
+(function(){
+
+  var STORE_KEY = "daybook-state-v1";
+  var ANTHROPIC_MODEL = "claude-sonnet-4-6";
+
+  var defaultState = {
+    tasks: [],
+    goals: [],
+    schedule: {0:[],1:[],2:[],3:[],4:[],5:[],6:[]},
+    logs: [],
+    settings: { apiKey:"", capacity:120, skipWeekends:false }
+  };
+
+  var state = loadState();
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORE_KEY);
+      if(!raw) return JSON.parse(JSON.stringify(defaultState));
+      var parsed = JSON.parse(raw);
+      for(var k in defaultState){ if(!(k in parsed)) parsed[k] = defaultState[k]; }
+      for(var d=0; d<7; d++){ if(!parsed.schedule[d]) parsed.schedule[d] = []; }
+      if(!parsed.settings) parsed.settings = JSON.parse(JSON.stringify(defaultState.settings));
+      for(var sk in defaultState.settings){ if(!(sk in parsed.settings)) parsed.settings[sk] = defaultState.settings[sk]; }
+      return parsed;
+    }catch(e){
+      return JSON.parse(JSON.stringify(defaultState));
+    }
+  }
+
+  function saveState(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+    catch(e){ console.warn("Could not save", e); }
+  }
+
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  function todayISO(){
+    var d = new Date();
+    return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate());
+  }
+  function pad(n){ return n < 10 ? "0"+n : ""+n; }
+  function isoOf(d){ return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate()); }
+
+  var DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  var DAY_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  function isoToDate(iso){
+    var parts = iso.split("-");
+    return new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  }
+
+  function formatDue(iso){
+    if(!iso) return "";
+    var today = todayISO();
+    if(iso === today) return "Today";
+    var d = isoToDate(iso);
+    var t = isoToDate(today);
+    var diff = Math.round((d - t) / 86400000);
+    if(diff === 1) return "Tomorrow";
+    if(diff === -1) return "Yesterday";
+    if(diff < 0) return d.toLocaleDateString(undefined,{month:"short", day:"numeric"}) + " (overdue)";
+    return d.toLocaleDateString(undefined,{month:"short", day:"numeric"});
+  }
+
+  // ---------- TAB SWITCHING ----------
+
+  var tabTitles = {today:"Today", tasks:"Tasks", fitness:"Fitness", week:"This week"};
+
+  function setTab(name){
+    document.querySelectorAll("section.tab").forEach(function(s){ s.classList.remove("active"); });
+    document.getElementById("tab-"+name).classList.add("active");
+    document.querySelectorAll("nav.tabbar button").forEach(function(b){
+      b.classList.toggle("active", b.dataset.tab === name);
+    });
+    document.getElementById("header-title").textContent = tabTitles[name];
+    renderAll();
+  }
+
+  document.querySelectorAll("nav.tabbar button").forEach(function(b){
+    b.addEventListener("click", function(){ setTab(b.dataset.tab); });
+  });
+
+  // ---------- HEADER ----------
+
+  function renderHeader(){
+    var d = new Date();
+    document.getElementById("header-date").textContent = d.toLocaleDateString(undefined,{weekday:"long", month:"long", day:"numeric"});
+  }
+
+  // ---------- TASKS ----------
+
+  function addTask(title, category, due, priority, duration){
+    if(!title || !title.trim()) return;
+    state.tasks.push({
+      id:uid(), title:title.trim(), category:category||"work", due:due||"",
+      priority:priority||"med", duration: duration ? parseInt(duration) : null,
+      planned:"", done:false
+    });
+    saveState();
+  }
+
+  document.getElementById("quick-task-add").addEventListener("click", function(){
+    var input = document.getElementById("quick-task-input");
+    addTask(input.value, "work", todayISO(), "med", null);
+    input.value = "";
+    renderAll();
+  });
+  document.getElementById("quick-task-input").addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ document.getElementById("quick-task-add").click(); }
+  });
+
+  document.getElementById("task-submit").addEventListener("click", function(){
+    var title = document.getElementById("task-title").value;
+    var category = document.getElementById("task-category").value;
+    var due = document.getElementById("task-due").value;
+    var priority = document.getElementById("task-priority").value;
+    var duration = document.getElementById("task-duration").value;
+    addTask(title, category, due, priority, duration);
+    document.getElementById("task-title").value = "";
+    document.getElementById("task-due").value = "";
+    document.getElementById("task-duration").value = "";
+    renderAll();
+  });
+
+  var taskFilter = "all";
+  document.querySelectorAll("#task-filter button").forEach(function(b){
+    b.addEventListener("click", function(){
+      taskFilter = b.dataset.f;
+      document.querySelectorAll("#task-filter button").forEach(function(x){ x.classList.remove("active"); });
+      b.classList.add("active");
+      renderTasks();
+    });
+  });
+
+  function toggleTask(id){
+    var t = state.tasks.find(function(x){ return x.id === id; });
+    if(t){ t.done = !t.done; saveState(); renderAll(); }
+  }
+  function deleteTask(id){
+    state.tasks = state.tasks.filter(function(x){ return x.id !== id; });
+    saveState(); renderAll();
+  }
+
+  function taskRow(t){
+    var row = document.createElement("div");
+    row.className = "row" + (t.done ? " done" : "");
+    var catDot = '<span class="dot ' + t.category + '"></span>';
+    var priDot = '<span class="dot ' + t.priority + '"></span>';
+    var bits = [];
+    bits.push(catDot + (t.category==="work"?"Work":"Personal"));
+    bits.push(priDot + (t.due ? formatDue(t.due) : "No deadline"));
+    if(t.duration) bits.push(t.duration + " min");
+    if(t.planned && t.planned !== t.due) bits.push('<span style="color:var(--work)">Plan: ' + formatDue(t.planned) + '</span>');
+    row.innerHTML =
+      '<div class="check ' + (t.category==="work"?"work":"") + (t.done?" on":"") + '" data-id="' + t.id + '"></div>' +
+      '<div class="row-body">' +
+        '<div class="row-title">' + escapeHtml(t.title) + '</div>' +
+        '<div class="row-sub">' + bits.join('&nbsp;&nbsp;') + '</div>' +
+      '</div>' +
+      '<button class="icon-btn" data-del="' + t.id + '">&#10005;</button>';
+    row.querySelector(".check").addEventListener("click", function(){ toggleTask(t.id); });
+    row.querySelector("[data-del]").addEventListener("click", function(){ deleteTask(t.id); });
+    return row;
+  }
+
+  function escapeHtml(s){
+    var d = document.createElement("div");
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function renderTasks(){
+    var list = document.getElementById("task-list");
+    list.innerHTML = "";
+    var items = state.tasks.slice();
+    if(taskFilter === "work") items = items.filter(function(t){ return t.category === "work" && !t.done; });
+    else if(taskFilter === "personal") items = items.filter(function(t){ return t.category === "personal" && !t.done; });
+    else if(taskFilter === "done") items = items.filter(function(t){ return t.done; });
+    else items = items.filter(function(t){ return !t.done; });
+
+    items.sort(function(a,b){
+      var ad = a.planned || a.due || "9999", bd = b.planned || b.due || "9999";
+      if(ad !== bd) return ad < bd ? -1 : 1;
+      var order = {high:0, med:1, low:2};
+      return order[a.priority] - order[b.priority];
+    });
+
+    if(items.length === 0){
+      list.innerHTML = '<div class="empty"><span class="big">&#128203;</span>Nothing here. Add a task above.</div>';
+      return;
+    }
+    items.forEach(function(t){ list.appendChild(taskRow(t)); });
+  }
+
+  // ---------- TODAY TAB ----------
+
+  function renderToday(){
+    var today = todayISO();
+    var dow = new Date().getDay();
+
+    var openTasks = state.tasks.filter(function(t){ return !t.done; });
+    var dueToday = openTasks.filter(function(t){
+      return (t.due && t.due <= today) || t.planned === today;
+    });
+    dueToday.sort(function(a,b){
+      var ad = a.due || a.planned || "9999", bd = b.due || b.planned || "9999";
+      return ad < bd ? -1 : 1;
+    });
+
+    document.getElementById("today-task-count").textContent = dueToday.length + (dueToday.length===1 ? " task" : " tasks");
+    var list = document.getElementById("today-task-list");
+    list.innerHTML = "";
+    if(dueToday.length === 0){
+      list.innerHTML = '<div class="empty">Nothing due today.</div>';
+    } else {
+      dueToday.forEach(function(t){ list.appendChild(taskRow(t)); });
+    }
+    document.getElementById("stat-open-tasks").textContent = openTasks.length;
+
+    document.getElementById("today-workout-day").textContent = DAY_NAMES[dow];
+    var sched = state.schedule[dow] || [];
+    var wList = document.getElementById("today-workout-list");
+    wList.innerHTML = "";
+    if(sched.length === 0){
+      wList.innerHTML = '<div class="empty">No session scheduled. Rest day, or add one in Fitness.</div>';
+    } else {
+      sched.forEach(function(item){
+        var loggedToday = state.logs.some(function(l){ return l.date === today && l.name === item.name; });
+        var row = document.createElement("div");
+        row.className = "row" + (loggedToday ? " done" : "");
+        row.innerHTML =
+          '<div class="check' + (loggedToday?" on":"") + '" data-name="' + escapeHtml(item.name) + '"></div>' +
+          '<div class="row-body"><div class="row-title">' + escapeHtml(item.name) + '</div></div>';
+        row.querySelector(".check").addEventListener("click", function(){
+          toggleWorkoutLog(item.name, today);
+        });
+        wList.appendChild(row);
+      });
+    }
+
+    document.getElementById("stat-streak").textContent = computeStreak();
+  }
+
+  function toggleWorkoutLog(name, date){
+    var idx = state.logs.findIndex(function(l){ return l.date === date && l.name === name; });
+    if(idx >= 0){ state.logs.splice(idx,1); }
+    else { state.logs.push({ id:uid(), date:date, name:name }); }
+    saveState();
+    renderAll();
+  }
+
+  function computeStreak(){
+    var streak = 0;
+    var d = new Date();
+    while(true){
+      var iso = isoOf(d);
+      var hit = state.logs.some(function(l){ return l.date === iso; });
+      if(hit){ streak++; d.setDate(d.getDate()-1); }
+      else break;
+    }
+    return streak;
+  }
+
+  // ---------- FITNESS TAB ----------
+
+  document.getElementById("goal-toggle").addEventListener("click", function(){
+    document.getElementById("goal-form").classList.toggle("open");
+  });
+  document.getElementById("goal-submit").addEventListener("click", function(){
+    var title = document.getElementById("goal-title").value.trim();
+    var target = parseFloat(document.getElementById("goal-target").value);
+    var unit = document.getElementById("goal-unit").value.trim();
+    if(!title || isNaN(target)) return;
+    state.goals.push({ id:uid(), title:title, target:target, current:0, unit:unit||"" });
+    saveState();
+    document.getElementById("goal-title").value = "";
+    document.getElementById("goal-target").value = "";
+    document.getElementById("goal-unit").value = "";
+    document.getElementById("goal-form").classList.remove("open");
+    renderAll();
+  });
+
+  function stepGoal(id, delta){
+    var g = state.goals.find(function(x){ return x.id === id; });
+    if(!g) return;
+    var step = (g.target >= 20) ? Math.max(1, Math.round(g.target*0.02)) : (g.target > 5 ? 1 : 0.5);
+    g.current = Math.max(0, Math.min(g.target, g.current + delta*step));
+    saveState(); renderAll();
+  }
+  function deleteGoal(id){
+    state.goals = state.goals.filter(function(x){ return x.id !== id; });
+    saveState(); renderAll();
+  }
+
+  function renderGoals(){
+    var list = document.getElementById("goal-list");
+    list.innerHTML = "";
+    if(state.goals.length === 0){
+      list.innerHTML = '<div class="empty">No goals yet. Add a strength or fitness target below.</div>';
+      return;
+    }
+    state.goals.forEach(function(g){
+      var pct = g.target > 0 ? Math.min(100, Math.round((g.current/g.target)*100)) : 0;
+      var row = document.createElement("div");
+      row.className = "goal-row";
+      row.innerHTML =
+        '<div class="goal-top"><span class="t">' + escapeHtml(g.title) + '</span><span class="v">' + round1(g.current) + ' / ' + round1(g.target) + ' ' + escapeHtml(g.unit) + '</span></div>' +
+        '<div class="progress-track"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="goal-actions">' +
+          '<button data-act="minus">&minus;</button>' +
+          '<button data-act="plus">+</button>' +
+          '<button data-act="del">Remove</button>' +
+        '</div>';
+      row.querySelector('[data-act="plus"]').addEventListener("click", function(){ stepGoal(g.id, 1); });
+      row.querySelector('[data-act="minus"]').addEventListener("click", function(){ stepGoal(g.id, -1); });
+      row.querySelector('[data-act="del"]').addEventListener("click", function(){ deleteGoal(g.id); });
+      list.appendChild(row);
+    });
+  }
+  function round1(n){ return Math.round(n*10)/10; }
+
+  document.getElementById("sched-toggle").addEventListener("click", function(){
+    document.getElementById("sched-form").classList.toggle("open");
+  });
+  document.getElementById("sched-submit").addEventListener("click", function(){
+    var day = document.getElementById("sched-day").value;
+    var name = document.getElementById("sched-name").value.trim();
+    if(!name) return;
+    state.schedule[day].push({ id:uid(), name:name });
+    saveState();
+    document.getElementById("sched-name").value = "";
+    document.getElementById("sched-form").classList.remove("open");
+    renderAll();
+  });
+
+  function removeSchedItem(day, id){
+    state.schedule[day] = state.schedule[day].filter(function(x){ return x.id !== id; });
+    saveState(); renderAll();
+  }
+
+  function renderSchedule(){
+    var container = document.getElementById("schedule-list");
+    container.innerHTML = "";
+    var order = [1,2,3,4,5,6,0];
+    var any = false;
+    order.forEach(function(d){
+      var items = state.schedule[d];
+      if(!items || items.length === 0) return;
+      any = true;
+      var wrap = document.createElement("div");
+      wrap.className = "row";
+      wrap.style.alignItems = "flex-start";
+      var chips = items.map(function(it){
+        return '<span class="chip fit" data-day="'+d+'" data-id="'+it.id+'">' + escapeHtml(it.name) + ' &nbsp;&#10005;</span>';
+      }).join("");
+      wrap.innerHTML = '<div class="row-body"><div class="row-title">' + DAY_NAMES[d] + '</div><div style="margin-top:6px">' + chips + '</div></div>';
+      container.appendChild(wrap);
+    });
+    if(!any){
+      container.innerHTML = '<div class="empty">No weekly sessions yet.</div>';
+    } else {
+      container.querySelectorAll(".chip").forEach(function(c){
+        c.addEventListener("click", function(){ removeSchedItem(c.dataset.day, c.dataset.id); });
+      });
+    }
+  }
+
+  function renderFitHistory(){
+    var grid = document.getElementById("fit-history");
+    grid.innerHTML = "";
+    var d = new Date();
+    d.setDate(d.getDate()-6);
+    for(var i=0;i<7;i++){
+      var iso = isoOf(d);
+      var hit = state.logs.some(function(l){ return l.date === iso; });
+      var pill = document.createElement("div");
+      pill.className = "day-pill" + (hit ? " hit" : "");
+      pill.textContent = DAY_SHORT[d.getDay()][0];
+      grid.appendChild(pill);
+      d.setDate(d.getDate()+1);
+    }
+    var streak = computeStreak();
+    document.getElementById("fit-streak-meta").textContent = streak + (streak===1 ? " day" : " days");
+  }
+
+  // ---------- WEEK TAB ----------
+
+  function renderWeek(){
+    var container = document.getElementById("week-list");
+    container.innerHTML = "";
+    var d = new Date();
+    var todayIso = todayISO();
+    for(var i=0;i<7;i++){
+      var iso = isoOf(d);
+      var dow = d.getDay();
+      var isToday = iso === todayIso;
+
+      var dayTasks = state.tasks.filter(function(t){ return (t.planned || t.due) === iso; });
+      var sched = state.schedule[dow] || [];
+
+      var block = document.createElement("div");
+      block.className = "card week-day";
+      var dateLabel = d.toLocaleDateString(undefined,{month:"short", day:"numeric"});
+      block.innerHTML =
+        '<div class="wd-head"><span class="name">' + DAY_NAMES[dow] + '</span><span class="date">' + dateLabel + '</span>' +
+        (isToday ? '<span class="today-badge">Today</span>' : '') + '</div>';
+
+      var body = document.createElement("div");
+      if(dayTasks.length === 0 && sched.length === 0){
+        body.innerHTML = '<div class="empty" style="padding:8px 0">Nothing planned.</div>';
+      } else {
+        var chipsHtml = "";
+        sched.forEach(function(s){
+          var loggedThatDay = state.logs.some(function(l){ return l.date === iso && l.name === s.name; });
+          chipsHtml += '<span class="chip fit">' + (loggedThatDay ? "&#10003; " : "") + escapeHtml(s.name) + '</span>';
+        });
+        dayTasks.forEach(function(t){
+          var cls = t.planned && t.planned !== t.due ? "chip plan" : "chip";
+          chipsHtml += '<span class="' + cls + '">' + (t.done ? "&#10003; " : "") + escapeHtml(t.title) + (t.duration ? " (" + t.duration + "m)" : "") + '</span>';
+        });
+        body.innerHTML = chipsHtml;
+      }
+      block.appendChild(body);
+      container.appendChild(block);
+      d.setDate(d.getDate()+1);
+    }
+  }
+
+  // ---------- AUTO-ORGANIZE ----------
+
+  document.getElementById("organize-settings-toggle").addEventListener("click", function(){
+    document.getElementById("organize-settings-form").classList.toggle("open");
+  });
+
+  function loadSettingsIntoForm(){
+    document.getElementById("setting-apikey").value = state.settings.apiKey || "";
+    document.getElementById("setting-capacity").value = state.settings.capacity || 120;
+    document.getElementById("setting-skip-weekends").checked = !!state.settings.skipWeekends;
+  }
+
+  document.getElementById("setting-save").addEventListener("click", function(){
+    state.settings.apiKey = document.getElementById("setting-apikey").value.trim();
+    var cap = parseInt(document.getElementById("setting-capacity").value);
+    state.settings.capacity = isNaN(cap) ? 120 : cap;
+    state.settings.skipWeekends = document.getElementById("setting-skip-weekends").checked;
+    saveState();
+    document.getElementById("organize-settings-form").classList.remove("open");
+    document.getElementById("organize-status").textContent = "Settings saved.";
+  });
+
+  document.getElementById("setting-clear-key").addEventListener("click", function(){
+    state.settings.apiKey = "";
+    saveState();
+    loadSettingsIntoForm();
+    document.getElementById("organize-status").textContent = "API key cleared.";
+  });
+
+  function addDays(iso, n){
+    var d = isoToDate(iso);
+    d.setDate(d.getDate()+n);
+    return isoOf(d);
+  }
+
+  function organizeLocally(tasks, capacity, skipWeekends){
+    capacity = capacity || 120;
+    var plan = {};
+    var dayCapacity = {};
+    var horizonStart = todayISO();
+
+    function capacityFor(iso){
+      if(!(iso in dayCapacity)) dayCapacity[iso] = capacity;
+      return dayCapacity[iso];
+    }
+    function isWeekend(iso){
+      var dow = isoToDate(iso).getDay();
+      return dow === 0 || dow === 6;
+    }
+
+    var sortable = tasks.slice().sort(function(a,b){
+      var ad = a.due || "9999-99-99", bd = b.due || "9999-99-99";
+      if(ad !== bd) return ad < bd ? -1 : 1;
+      var order = {high:0, med:1, low:2};
+      return order[a.priority] - order[b.priority];
+    });
+
+    sortable.forEach(function(t){
+      var duration = t.duration || 30;
+      var cursor = horizonStart;
+      var limit = t.due || addDays(horizonStart, 30);
+      var placed = false;
+      var guard = 0;
+      while(guard < 60){
+        guard++;
+        if(!skipWeekends || !isWeekend(cursor)){
+          if(capacityFor(cursor) >= duration){
+            dayCapacity[cursor] = capacityFor(cursor) - duration;
+            plan[t.id] = cursor;
+            placed = true;
+            break;
+          }
+        }
+        if(cursor >= limit && t.due){
+          break;
+        }
+        cursor = addDays(cursor, 1);
+      }
+      if(!placed){
+        var forceDay = t.due || cursor;
+        dayCapacity[forceDay] = capacityFor(forceDay) - duration;
+        plan[t.id] = forceDay;
+      }
+    });
+
+    return plan;
+  }
+
+  function applyPlan(plan){
+    state.tasks.forEach(function(t){
+      if(plan[t.id]) t.planned = plan[t.id];
+    });
+    saveState();
+    renderAll();
+  }
+
+  function stripFences(text){
+    return text.replace(/```json/g, "").replace(/```/g, "").trim();
+  }
+
+  function organizeWithClaude(tasks, capacity, skipWeekends, apiKey){
+    var compact = tasks.map(function(t){
+      return { id:t.id, title:t.title, deadline: t.due || null, minutes: t.duration || 30, priority:t.priority };
+    });
+    var sys = "You are a scheduling assistant. Given a list of tasks with optional deadlines and durations in minutes, " +
+      "and a daily working capacity of " + capacity + " minutes" + (skipWeekends ? " (weekends are unavailable)" : "") +
+      ", assign each task a single planned work date (YYYY-MM-DD, today or later) so that: no day's assigned tasks exceed " +
+      "the daily capacity, tasks are scheduled on or before their deadline whenever possible, and higher-priority and " +
+      "closer-deadline tasks are scheduled earlier. Today's date is " + todayISO() + ". " +
+      "Respond with ONLY a JSON array, no prose, no markdown fences, in this exact shape: " +
+      '[{"id":"<task id>","date":"YYYY-MM-DD"}]';
+
+    return fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: ANTHROPIC_MODEL,
+        max_tokens: 1000,
+        system: sys,
+        messages: [
+          { role: "user", content: "Tasks:\n" + JSON.stringify(compact) }
+        ]
+      })
+    }).then(function(res){
+      if(!res.ok){
+        return res.text().then(function(txt){ throw new Error("API error " + res.status + ": " + txt); });
+      }
+      return res.json();
+    }).then(function(data){
+      var textBlock = (data.content || []).filter(function(b){ return b.type === "text"; }).map(function(b){ return b.text; }).join("\n");
+      var clean = stripFences(textBlock);
+      var arr = JSON.parse(clean);
+      var plan = {};
+      var validIds = {};
+      tasks.forEach(function(t){ validIds[t.id] = true; });
+      arr.forEach(function(item){
+        if(item && item.id && item.date && validIds[item.id] && /^\d{4}-\d{2}-\d{2}$/.test(item.date)){
+          plan[item.id] = item.date;
+        }
+      });
+      return plan;
+    });
+  }
+
+  document.getElementById("organize-btn").addEventListener("click", function(){
+    var btn = document.getElementById("organize-btn");
+    var status = document.getElementById("organize-status");
+    var candidates = state.tasks.filter(function(t){ return !t.done; });
+
+    if(candidates.length === 0){
+      status.textContent = "No open tasks to organize.";
+      return;
+    }
+
+    var apiKey = state.settings.apiKey;
+    var capacity = state.settings.capacity || 120;
+    var skipWeekends = state.settings.skipWeekends;
+    var online = navigator.onLine;
+
+    btn.disabled = true;
+    btn.textContent = "Organizing...";
+
+    function finishLocal(prefix){
+      var plan = organizeLocally(candidates, capacity, skipWeekends);
+      applyPlan(plan);
+      status.textContent = prefix + " Organized " + candidates.length + (candidates.length===1?" task":" tasks") + " with built-in logic.";
+      btn.disabled = false;
+      btn.textContent = "Organize tasks";
+    }
+
+    if(apiKey && online){
+      status.textContent = "Asking Claude...";
+      organizeWithClaude(candidates, capacity, skipWeekends, apiKey).then(function(plan){
+        var covered = Object.keys(plan).length;
+        if(covered < candidates.length){
+          var remaining = candidates.filter(function(t){ return !plan[t.id]; });
+          var localPlan = organizeLocally(remaining, capacity, skipWeekends);
+          for(var k in localPlan){ plan[k] = localPlan[k]; }
+        }
+        applyPlan(plan);
+        status.textContent = "Organized " + candidates.length + (candidates.length===1?" task":" tasks") + " with Claude.";
+        btn.disabled = false;
+        btn.textContent = "Organize tasks";
+      }).catch(function(err){
+        console.warn("Claude organize failed, falling back to local logic", err);
+        finishLocal("Couldn't reach Claude, so used built-in logic instead.");
+      });
+    } else if(apiKey && !online){
+      finishLocal("No internet connection.");
+    } else {
+      finishLocal("");
+    }
+  });
+
+  // ---------- RENDER ALL ----------
+
+  function renderAll(){
+    renderHeader();
+    renderToday();
+    renderTasks();
+    renderGoals();
+    renderSchedule();
+    renderFitHistory();
+    renderWeek();
+    loadSettingsIntoForm();
+  }
+
+  renderAll();
+
+})();
+</script>
+
+</body>
+</html>
